@@ -1,1 +1,2 @@
-Hello group!!!
+#!/bin/bash
+echo "Hello Devops!!!"
