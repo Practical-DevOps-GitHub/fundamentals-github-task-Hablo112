@@ -1,0 +1,30 @@
+name: Discord notification on PR created
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord message
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          payload=$(cat << 'JSON'
+          {
+            "username": "GitHub PR Bot",
+            "content": "🚀 **New Pull Request created!**\n\n📦 **Repo:** ${REPO}\n🔀 **From:** ${PR_HEAD} → **To:** ${PR_BASE}\n📝 **Title:** ${PR_TITLE}\n👤 **Author:** ${PR_AUTHOR}\n🔗 **Link:** ${PR_URL}"
+          }
+          JSON
+          )
+          # підставимо env змінні (простий і надійний спосіб)
+          payload=$(echo "$payload" | sed "s|\${REPO}|$REPO|g; s|\${PR_HEAD}|$PR_HEAD|g; s|\${PR_BASE}|$PR_BASE|g; s|\${PR_TITLE}|$PR_TITLE|g; s|\${PR_AUTHOR}|$PR_AUTHOR|g; s|\${PR_URL}|$PR_URL|g")
+          curl -sS -H "Content-Type: application/json" -X POST -d "$payload" "$DISCORD_WEBHOOK_URL"
